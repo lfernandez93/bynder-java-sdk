@@ -14,6 +14,7 @@ import java.util.Map;
 import com.bynder.sdk.api.BynderApi;
 import com.bynder.sdk.model.FinaliseResponse;
 import com.bynder.sdk.model.PollStatus;
+import com.bynder.sdk.model.SavedMediaResponse;
 import com.bynder.sdk.model.UploadRequest;
 import com.bynder.sdk.query.FinaliseUploadQuery;
 import com.bynder.sdk.query.PollStatusQuery;
@@ -28,12 +29,16 @@ import com.bynder.sdk.util.Utils;
 
 import io.reactivex.Observable;
 import io.reactivex.ObservableEmitter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import retrofit2.Response;
 
 /**
  * Class used to upload files to Bynder.
  */
 public class FileUploader {
+
+    private static final Logger LOG = LoggerFactory.getLogger(FileUploader.class);
 
     /**
      * Max chunk size.
@@ -73,7 +78,7 @@ public class FileUploader {
      *
      * @return {@link Observable} with Boolean indicating if upload was successful or not.
      */
-    public Observable<Boolean> uploadFile(final UploadQuery uploadQuery) {
+    public Observable<Response<SavedMediaResponse>> uploadFile(final UploadQuery uploadQuery) {
         return Observable.create(observableEmitter -> {
             Observable<Response<String>> s3EndpointObs = getClosestS3Endpoint();
             s3EndpointObs.subscribe(awsBucketResponse -> {
@@ -93,6 +98,7 @@ public class FileUploader {
         });
     }
 
+
     /**
      * Starts the process to upload a file to Bynder, after the {@link AmazonService} was
      * successfully instantiated with the closest s3 endpoint and the upload was successfully
@@ -103,11 +109,12 @@ public class FileUploader {
      * @param uploadRequest Upload authorisation information.
      * @param file File to be uploaded.
      */
-    private void startUploadProcess(final UploadQuery uploadQuery, final ObservableEmitter<Boolean> observableEmitter, final UploadRequest uploadRequest, final File file) {
+    private void startUploadProcess(final UploadQuery uploadQuery, final ObservableEmitter<Response<SavedMediaResponse>> observableEmitter, final UploadRequest uploadRequest, final File file) {
         Observable<Integer> uploadPartsObs = uploadParts(file, uploadRequest);
         uploadPartsObs.subscribe(chunksResponse -> {
+            String s3Filename = uploadQuery.getFileName();
             Observable<Response<FinaliseResponse>> finaliseUploadedFileObs =
-                    finaliseUpload(new FinaliseUploadQuery(uploadRequest.getS3File().getUploadId(), uploadRequest.getS3File().getTargetId(), uploadRequest.getS3Filename(), chunksResponse));
+                    finaliseUpload(new FinaliseUploadQuery(uploadRequest.getS3File().getUploadId(), uploadRequest.getS3File().getTargetId(), uploadRequest.getS3Filename(), chunksResponse,s3Filename));
             finaliseUploadedFileObs.subscribe(finaliseResponse -> processFinaliseResponse(uploadQuery, observableEmitter, file, finaliseResponse), throwable -> observableEmitter.onError(throwable));
         }, throwable -> observableEmitter.onError(throwable));
     }
@@ -189,7 +196,7 @@ public class FileUploader {
      *
      * @throws InterruptedException
      */
-    private void processFinaliseResponse(final UploadQuery uploadQuery, final ObservableEmitter<Boolean> observableEmitter, final File file, final Response<FinaliseResponse> finaliseResponse)
+    private void processFinaliseResponse(final UploadQuery uploadQuery, final ObservableEmitter<Response<SavedMediaResponse>> observableEmitter, final File file, final Response<FinaliseResponse> finaliseResponse)
             throws InterruptedException {
         String importId = finaliseResponse.body().getImportId();
         hasFinishedSuccessfully(importId).subscribe(hasFinishedSuccessfully -> {
@@ -254,15 +261,15 @@ public class FileUploader {
      * @throws IllegalArgumentException
      * @throws IllegalAccessException
      */
-    private void saveUploadedMedia(final UploadQuery uploadQuery, final ObservableEmitter<Boolean> observableEmitter, final File file, final String importId)
+    private void saveUploadedMedia(final UploadQuery uploadQuery, final ObservableEmitter<Response<SavedMediaResponse>> observableEmitter, final File file, final String importId)
             throws IllegalArgumentException, IllegalAccessException {
-        Observable<Response<Void>> saveMediaObs;
+        Observable<Response<SavedMediaResponse>> saveMediaObs;
         if (uploadQuery.getMediaId() == null) {
             saveMediaObs = saveMedia(new SaveMediaQuery(importId).setBrandId(uploadQuery.getBrandId()).setName(file.getName()).setAudit(uploadQuery.isAudit()));
         } else {
             saveMediaObs = saveMedia(new SaveMediaQuery(importId).setMediaId(uploadQuery.getMediaId()).setAudit(uploadQuery.isAudit()));
         }
-        saveMediaObs.subscribe(voidResponse -> observableEmitter.onNext(true), throwable -> observableEmitter.onError(throwable), () -> observableEmitter.onComplete());
+        saveMediaObs.subscribe(savedMedia -> observableEmitter.onNext(savedMedia), throwable -> observableEmitter.onError(throwable), () -> observableEmitter.onComplete());
     }
 
     /**
@@ -322,7 +329,7 @@ public class FileUploader {
      * @throws IllegalAccessException
      * @throws IllegalArgumentException
      */
-    private Observable<Response<Void>> saveMedia(final SaveMediaQuery saveMediaQuery) throws IllegalArgumentException, IllegalAccessException {
+    private Observable<Response<SavedMediaResponse>> saveMedia(final SaveMediaQuery saveMediaQuery) throws IllegalArgumentException, IllegalAccessException {
         Map<String, String> params = Utils.getApiParameters(saveMediaQuery);
         return bynderApi.saveMedia(params);
     }

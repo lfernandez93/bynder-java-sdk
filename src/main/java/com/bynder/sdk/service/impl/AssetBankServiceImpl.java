@@ -10,11 +10,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.bynder.sdk.api.BynderApi;
-import com.bynder.sdk.model.Brand;
-import com.bynder.sdk.model.DownloadUrl;
-import com.bynder.sdk.model.Media;
-import com.bynder.sdk.model.Metaproperty;
-import com.bynder.sdk.model.Tag;
+import com.bynder.sdk.model.*;
 import com.bynder.sdk.query.MediaDownloadQuery;
 import com.bynder.sdk.query.MediaInfoQuery;
 import com.bynder.sdk.query.MediaPropertiesQuery;
@@ -120,7 +116,7 @@ public class AssetBankServiceImpl implements AssetBankService {
      * Check {@link AssetBankService} for more information.
      */
     @Override
-    public Observable<Boolean> uploadFile(final UploadQuery uploadQuery) {
+    public Observable<Response<SavedMediaResponse>> uploadFile(final UploadQuery uploadQuery) {
         return fileUploader.uploadFile(uploadQuery);
     }
 }

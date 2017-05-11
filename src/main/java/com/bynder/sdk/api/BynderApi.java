@@ -9,15 +9,7 @@ package com.bynder.sdk.api;
 import java.util.List;
 import java.util.Map;
 
-import com.bynder.sdk.model.Brand;
-import com.bynder.sdk.model.DownloadUrl;
-import com.bynder.sdk.model.FinaliseResponse;
-import com.bynder.sdk.model.Media;
-import com.bynder.sdk.model.Metaproperty;
-import com.bynder.sdk.model.PollStatus;
-import com.bynder.sdk.model.Tag;
-import com.bynder.sdk.model.UploadRequest;
-import com.bynder.sdk.model.User;
+import com.bynder.sdk.model.*;
 
 import io.reactivex.Observable;
 import retrofit2.Response;
@@ -202,5 +194,5 @@ public interface BynderApi {
      */
     @FormUrlEncoded
     @POST("/api/v4/media/save/")
-    Observable<Response<Void>> saveMedia(@FieldMap Map<String, String> params);
+    Observable<Response<SavedMediaResponse>> saveMedia(@FieldMap Map<String, String> params);
 }

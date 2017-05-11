@@ -29,9 +29,15 @@ public class UploadQuery {
      */
     private Boolean audit;
 
-    public UploadQuery(final String filepath, final String brandId) {
+    /**
+     * The file name of the asset, will become s3 original fileName
+     */
+    private String fileName;
+
+    public UploadQuery(final String filepath, final String brandId,final String fileName) {
         this.filepath = filepath;
         this.brandId = brandId;
+        this.fileName = fileName;
     }
 
     public String getFilepath() {
@@ -58,5 +64,13 @@ public class UploadQuery {
     public UploadQuery setAudit(final Boolean audit) {
         this.audit = audit;
         return this;
+    }
+
+    public String getFileName() {
+        return fileName;
+    }
+
+    public void setFileName(String fileName) {
+        this.fileName = fileName;
     }
 }

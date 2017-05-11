@@ -10,11 +10,7 @@ import java.lang.reflect.Field;
 import java.util.List;
 import java.util.Map;
 
-import com.bynder.sdk.model.Brand;
-import com.bynder.sdk.model.DownloadUrl;
-import com.bynder.sdk.model.Media;
-import com.bynder.sdk.model.Metaproperty;
-import com.bynder.sdk.model.Tag;
+import com.bynder.sdk.model.*;
 import com.bynder.sdk.query.MediaDownloadQuery;
 import com.bynder.sdk.query.MediaInfoQuery;
 import com.bynder.sdk.query.MediaPropertiesQuery;
@@ -113,5 +109,5 @@ public interface AssetBankService {
      *
      * @return {@link Observable} with Boolean indicating if upload was successful or not.
      */
-    Observable<Boolean> uploadFile(UploadQuery uploadQuery);
+    Observable<Response<SavedMediaResponse>> uploadFile(UploadQuery uploadQuery);
 }
